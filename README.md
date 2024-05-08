@@ -1,4 +1,4 @@
-FolderSynchronizer
+**FolderSynchronizer**
 
 Task from an employer:
 
