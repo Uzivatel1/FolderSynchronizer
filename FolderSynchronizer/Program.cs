@@ -8,18 +8,19 @@ namespace FolderSynchronizer
     {
         static void Main(string[] args)
         {
-            // Set the default interval (in milliseconds) for the timer
-            int intervalMilliseconds = 6000; // 6 seconds
-            string sourceFolder = "WorkFolder";
-            string targetFolder = "ReplicaFolder";
+            // Set defaults: timer for periodic synchronization, source folder, target folder, and log file
+            int intervalMilliseconds = 6000;
+            string sourceFolder = "SourceFolder";
+            string targetFolder = "TargetFolder";
+
+            // Look for the log file in the Documents folder by default
             string logFileName = "sync.log";
             string logFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), logFileName);
 
             // Check if command-line arguments are provided and parse them
             if (args.Length >= 3)
             {
-                // Parse command-line arguments for interval, source folder, and target folder
-                // Update intervalMilliseconds, sourceFolder, and targetFolder accordingly
+                // Parse the interval (first argument)
                 if (!int.TryParse(args[0], out int interval) || interval <= 0)
                 {
                     Console.WriteLine("Invalid interval provided. Defaulting to 6 seconds.");
@@ -29,25 +30,11 @@ namespace FolderSynchronizer
                     intervalMilliseconds = interval;
                 }
 
+                // Set source and target folders from arguments
                 sourceFolder = args[1];
                 targetFolder = args[2];
 
-                // Optional: check if provided folders exist and create them if they don't
-                if (!Directory.Exists(sourceFolder))
-                {
-                    Directory.CreateDirectory(sourceFolder);
-                    Console.WriteLine($"Folder '{sourceFolder}' was created.");
-                    LogToFile(logFilePath, $"Folder '{sourceFolder}' was created at " + DateTime.Now.ToString());
-                }
-
-                if (!Directory.Exists(targetFolder))
-                {
-                    Directory.CreateDirectory(targetFolder);
-                    Console.WriteLine($"Folder '{targetFolder}' was created.");
-                    LogToFile(logFilePath, $"Folder '{targetFolder}' was created at " + DateTime.Now.ToString());
-                }
-
-                // Check if a log file path is provided
+                // Only override logFilePath if a fourth argument is provided
                 if (args.Length >= 4)
                 {
                     logFilePath = args[3];
@@ -55,20 +42,51 @@ namespace FolderSynchronizer
             }
             else
             {
+                // Display usage if insufficient arguments
                 Console.WriteLine("Usage: Synchronizer <interval> <source_folder> <target_folder> [log_file]");
                 return;
             }
 
+            // Ensure log directory exists after logFilePath is finalized
+            string logDirectory = Path.GetDirectoryName(logFilePath);
+
+            // Check and create log directory if it does not exist
+            if (!Directory.Exists(logDirectory))
+            {
+                Directory.CreateDirectory(logDirectory);
+                Console.WriteLine($"Log directory '{logDirectory}' was created.");
+            }
+            else
+            {
+                Console.WriteLine($"Log directory '{logDirectory}' already exists.");
+            }
+
+            // Ensure source and target folders exist
+            if (!Directory.Exists(sourceFolder))
+            {
+                Directory.CreateDirectory(sourceFolder);
+                Console.WriteLine($"Folder '{sourceFolder}' was created.");
+            }
+            else
+            {
+                Console.WriteLine($"Folder '{sourceFolder}' already exists.");
+            }
+
+            if (!Directory.Exists(targetFolder))
+            {
+                Directory.CreateDirectory(targetFolder);
+                Console.WriteLine($"Folder '{targetFolder}' was created.");
+            }
+            else
+            {
+                Console.WriteLine($"Folder '{targetFolder}' already exists.");
+            }
+
             // Create a new Timer
             System.Timers.Timer timer = new(intervalMilliseconds);
-
-            // Hook up the Elapsed event
             timer.Elapsed += (sender, e) => TimerElapsed(sender, e, sourceFolder, targetFolder, logFilePath);
-
-            // Start the timer
             timer.Start();
 
-            // Wait here to prevent the application from exiting immediately
             Console.WriteLine("Press any key to exit...");
             Console.ReadKey();
         }
